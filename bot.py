@@ -9,7 +9,7 @@ import config
 import pymongo
 import os
 import sys
-import persistance
+import persistence
 
 class RedditGpgBot:
     user_agent = '/r/GPGpractice practicer'
@@ -20,7 +20,7 @@ class RedditGpgBot:
         self.agent = praw.Reddit(self.user_agent)
         self.agent.login(config.REDDIT_USER, config.REDDIT_PASS)
         
-        self.persistance = persistance.Persistance(config.MONGO_URI)
+        self.persistence = persistence.Persistence(config.MONGO_URI)
 
         self.gpg = gnupg.GPG(homedir = 'gpg-homedir')
         
@@ -29,12 +29,22 @@ class RedditGpgBot:
     def  main_loop(self):
         while True:
             submissions = self.agent.get_subreddit(self.subreddit).get_hot(limit = 10000)
-            results = [(thread, self.handle_thread(thread)) for thread in submissions]
+            
+            for thread in submissions:
+                if not self.thread_already_handled(thread):
+                    self.handle_thread(thread)
+                else:
+                    print('thread %s already handled, skipping' % thread.id)
 
             break
 
-    def thread_already_handled():
-        # make call to mongodb, etc.
+    def thread_already_handled(self, thread):
+        return self.persistence.is_thread_in_db(thread.id)
+
+    def format_gpg_message(self, thread):
+        return '\n' + '\n'.join([' ' * 4 + line for line in str(enc).split('\n')])
+
+    def reply_to_thread(self, thread_id, msg):
         pass
 
     def handle_thread(self, thread):
@@ -46,12 +56,12 @@ class RedditGpgBot:
             if res.counts['count'] is 0:
                 print('Seems like I couldn\'t import the key. stderr of gpg: %s' % res.stderr)
                 print('\nThe key in this case was:\n***\n%s\n\n***' % public_key)
-                self.persistance.register_public_key_found(thread.id, public_key, res.stderr, res.summary(), False)
+                self.persistence.register_public_key_found(thread.id, public_key, res.stderr, res.summary(), False)
             else:
-                self.persistance.register_public_key_found(thread.id, public_key, res.stderr, res.summary(), True)
+                self.persistence.register_public_key_found(thread.id, public_key, res.stderr, res.summary(), True)
             return True
         else:
-            self.persistance.register_no_public_key_found(thread.id)
+            self.persistence.register_no_public_key_found(thread.id)
             print('No key found in %s' % thread.url)
             return False
 
