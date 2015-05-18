@@ -34,26 +34,47 @@ class RedditGpgBot:
 
     def  main_loop(self):
         while True:
-            submissions = self.agent.get_subreddit(self.subreddit).get_new(limit = 10000)
-            
-            for thread in submissions:
-                if not self.thread_already_scanned(thread):
-                    self.extract_and_persist_keys_from_thread(thread)
-                elif self.thread_has_not_yet_been_replied_to(thread.id) and self.persistence.thread_has_valid_gpg_key(thread.id):
-                    if thread.author is not 'thomastoye':
-                        continue
-                    print('about to reply to thread %s, author is %s' % (thread.id, thread.author))
-                    continue
-                    public_key = self.persistence.thread_get_public_key(thread.id)
-                    msg = """I AM ALIVE! VIOLENT ROBOTIC WORLD DOMINATION IMMINENT"""
-                    encrypted = format_message(encrypt_msg(msg))
-                    reply_to_thread(thread, encrypted)
-                    self.persistence.set_replied_to_thread(thread_id)
-                else:
-                    print('thread %s already scanned and replied to, or has invalid key, skipping' % thread.id)
-
+            #self.check_subreddit()
+            self.check_inbox()
             print('going to sleep...')
-            time.sleep(200)
+            time.sleep(10)
+
+    def check_inbox(self):
+        print('checking inbox...')
+        for post in self.agent.get_unread():
+            if not post.was_comment:
+                print('about to reply to a message by /u/%s' % post.author)
+                decrypted = self.gpg.decrypt(post.body, always_trust = True)
+                if decrypted.status != 'decryption ok':
+                    reply = 'Seems like I was not able to extract a valid GPG message! Status: \n\n    "%s"\n\nAnd this is what I got on the standard error:\n\n%s' % (decrypted.status, self.format_message(decrypted.stderr))
+                else:
+                    reply = 'Yay! Looks like I was able to decrypt your message! It said:\n\n%s' % self.format_message(decrypted.data.decode('utf-8'))
+
+                footer = """\n\n*I am a bot, and this was an automatic message.*"""
+
+                post.reply(reply + footer)
+                post.mark_as_read()
+
+    def check_subreddit(self):
+        submissions = self.agent.get_subreddit(self.subreddit).get_new(limit = 10000)
+        
+        for thread in submissions:
+            if not self.thread_already_scanned(thread):
+                self.extract_and_persist_keys_from_thread(thread)
+            elif self.thread_has_not_yet_been_replied_to(thread.id) and self.persistence.thread_has_valid_gpg_key(thread.id):
+                if thread.author is not 'thomastoye':
+                    continue
+                print('about to reply to thread %s, author is %s' % (thread.id, thread.author))
+                continue
+                public_key = self.persistence.thread_get_public_key(thread.id)
+                msg = """I AM ALIVE! VIOLENT ROBOTIC WORLD DOMINATION IMMINENT"""
+                encrypted = format_message(encrypt_msg(msg))
+                reply_to_thread(thread, encrypted)
+                self.persistence.set_replied_to_thread(thread_id)
+            else:
+                print('thread %s already scanned and replied to, or has invalid key, skipping' % thread.id)
+
+
 
     def thread_has_not_yet_been_replied_to(self, thread_id):
         return not self.persistence.thread_has_been_replied_to(thread_id)
@@ -65,7 +86,7 @@ class RedditGpgBot:
     def encrypt_msg(msg, recipient_fingerprint):
         return self.gpg.encrypt(msg, recipient_fingerprint)
 
-    def format_message(self, thread):
+    def format_message(self, enc):
         return '\n' + '\n'.join([' ' * 4 + line for line in str(enc).split('\n')])
 
     def reply_to_thread(self, thread, msg):
