@@ -1,6 +1,6 @@
 # Reddit GNU Privacy Guard Bot
 
-This a a [reddit](http://www.reddit.com) bot that lives on the [/r/GPGpractice](http://www.reddit.com/r/GPGpractice/) subreddit. Currently, it doesn't do a whole lot, but the plan is to automatically respond to new threads. Note that **the private key of the bot is in this repository**, this is not a mistake, it was done on purpose to help people debug, etc.
+This a a [reddit](http://www.reddit.com) bot that lives on the [/r/GPGpractice](http://www.reddit.com/r/GPGpractice/) subreddit. Currently, it doesn't do a whole lot, but the plan is to automatically respond to new threads.
 
 ## Parsing keys
 
@@ -10,12 +10,11 @@ Currently, the following mechanisms are supported:
 
 * Public key directly in selftext
 * A link to [pastebin.com](http://www.pastebin.com)
-* --A link to the MIT key server-- gnupg-python has weird behaviour when importing from keyservers, sometimes it works, sometimes it doesn't... Not supported until I find the time to investigate (probably never, since only a few people post links like this).
 
 Unsupported:
 
 * Links to other pastebin services
-* Links to other key servers
+* Links key servers: `gnupg-python` behaves weirdly when requesting keys from keyservers: the first time, it works, the second time not (even after deleting them from the key ring)
 * Only providing a fingerprint
 
 ## Replying to threads
@@ -25,26 +24,6 @@ The bot will respond to threads with a message, encrypted with the public key of
 ## Private key warner
 
 I was surprised to see a few people accidentally posting private keys. Since this is very dangerous behaviour, I decided that the bot will warn in those cases.
-
-## python-gnupg
-
-Here are some notes on the `gnupg` module:
-
-### Generate a key
-
-    >>> import gnupg
-    >>> gpg = gnupg.GPG(homedir='gpg-homedir')
-    >>> bot_gpg_settings = { 'name_real': 'Reddit GPG Bot', 'name_email': '', 'key_type': 'RSA', 'key_length': 4096, 'key_usage': 'ESCA'}
-    >>> key_input = gpg.gen_key_input(**bot_gpg_settings)
-    >>> bot_key = gpg.gen_key(key_input) # may take a while
-    >>> print(bot_key.fingerprint)
-
-### Getting a key from a keyserver
-
-`python-gnupg` is really picky when it comes to the format. These work, sometimes (they tend to time out on my machine if used more than once):
-
-    >>> key = gpg.recv_keys('hkp://pgp.mit.edu', '946563E8A1D683E4')
-    >>> key = gpg.recv_keys('hkp://pgp.mit.edu', 'A1D683E4')
 
 ## Development
 
