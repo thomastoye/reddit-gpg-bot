@@ -50,7 +50,7 @@ class RedditGpgBot:
                 else:
                     reply = 'Yay! Looks like I was able to decrypt your message! It said:\n\n%s' % self.format_message(decrypted.data.decode('utf-8'))
 
-                footer = """\n\n*I am a bot, and this was an automatic message.*"""
+                footer = """\n\n*I am a bot, and this was an automatic message. When you sent me a private message, I assume it's encrypted with my public key and try to decrypt, then send it back to you to confirm. [My public key](keys.gnupg.net/pks/lookup?op=vindex&search=0xFA2CFCFD&fingerprint=on), [more information and source code](https://github.com/thomastoye/reddit-gpg-bot)*"""
 
                 post.reply(reply + footer)
                 post.mark_as_read()

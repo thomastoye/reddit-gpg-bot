@@ -2,9 +2,11 @@
 
 This a a [reddit](http://www.reddit.com) bot that lives on the [/r/GPGpractice](http://www.reddit.com/r/GPGpractice/) subreddit. Currently, it doesn't do a whole lot, but the plan is to automatically respond to new threads.
 
-## Parsing keys
+## Functionality
 
-The bot will periodically scan for new threads. When it finds one, it will attempt to extract a public key and import it. At the moment, this is effective ~75% of the time. The 25% of threads that didn't make it didn't contain a public key for the most part (questions, accidentally posting a private key, ill-formatted keys, ...).
+### Replying to threads
+
+The bot will periodically scan for new threads on /r/GPGpractice. When it finds one, it will attempt to extract a public key and import it. At the moment, this is effective ~75% of the time. The 25% of threads that didn't make it didn't contain a public key for the most part (questions, accidentally posting a private key, ill-formatted keys, ...).
 
 Currently, the following mechanisms are supported:
 
@@ -17,13 +19,11 @@ Unsupported:
 * Links key servers: `gnupg-python` behaves weirdly when requesting keys from keyservers: the first time, it works, the second time not (even after deleting them from the key ring)
 * Only providing a fingerprint
 
-## Replying to threads
-
-The bot will respond to threads with a message, encrypted with the public key of the thread starter.
-
-## Private key warner
-
 I was surprised to see a few people accidentally posting private keys. Since this is very dangerous behaviour, I decided that the bot will warn in those cases.
+
+### Replying to private messages
+
+When the bot receives a private message, it will assume it's a GPG encrypted message and try to decrypt it. If it's able to decrypt it, it will echo back the decrypted text to confirm. If can't decrypt the message, it sends back that it was unable to decrypt, along with the stderr of the GPG command.
 
 ## Development
 
